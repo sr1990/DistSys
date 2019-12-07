@@ -16,27 +16,6 @@ func doMap(
 	mapF func(filename string, contents string) []KeyValue,
 ) {
 
-	fmt.Println("\nSAN: in function doMap")
-	fmt.Printf("\nSAN: JobName: %s, mapTask: %d, inFile: %s, nReduce: %d ", jobName, mapTask, inFile, nReduce)
-
-	buf, err := ioutil.ReadFile(inFile)
-
-	if err != nil {
-		fmt.Print(err)
-	}
-
-	kvs := mapF(inFile, string(buf))
-
-	for _, kv := range kvs {
-		//create file name
-		reduce_task := ihash(kv.Key) % nReduce
-		intermediate_file_name := reduceName(jobName, mapTask, reduce_task)
-		//fmt.Println("\nQQ: Creating intermediate file : ", intermediate_file_name)
-		var file, _ = os.OpenFile(intermediate_file_name, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-		enc := json.NewEncoder(file)
-		enc.Encode(&kv)
-		file.Close()
-	}
 	//
 	// doMap manages one map task: it should read one of the input files
 	// (inFile), call the user-defined map function (mapF) for that file's
@@ -87,6 +66,23 @@ func doMap(
 	//   FileName = map task number and reduce task number - reduceName(jobName,mapTask,r)
 	//   Call ihash() (see below) on each key, mod nReduce, to pick r for a key/value pair.
 	//
+	buf, err := ioutil.ReadFile(inFile)
+
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	kvs := mapF(inFile, string(buf))
+
+	for _, kv := range kvs {
+		//create file name
+		reduce_task := ihash(kv.Key) % nReduce
+		intermediate_file_name := reduceName(jobName, mapTask, reduce_task)
+		var file, _ = os.OpenFile(intermediate_file_name, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		enc := json.NewEncoder(file)
+		enc.Encode(&kv)
+		file.Close()
+	}
 }
 
 func ihash(s string) int {

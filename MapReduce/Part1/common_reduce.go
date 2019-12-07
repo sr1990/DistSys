@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"sort"
-	"strconv"
 )
 
 func doReduce(
@@ -60,52 +58,55 @@ func doReduce(
 	//3. Call reduceF for each key
 	//4. Write reduce output as JSON encoded keyValue - to file named - outFile
 
-	//keySort := func(p1, p2 *KeyValue) bool {
-	//	return p1.key < p2.key
-	//}
-	var keyValue_Array []KeyValue
+	keyValMap := make(map[string][]string)
 
 	for m := 0; m < nMap; m++ {
 		//find name of intermediate file
 		intermediate_file_name := reduceName(jobName, m, reduceTask)
 		//read json from intermediate_file_name
 		//open file named intermediate_file_name
-		fmt.Println("\nReading file named: ", intermediate_file_name)
+		fmt.Println("\nSAN: Reading file named: ", intermediate_file_name)
 		file, err := ioutil.ReadFile(intermediate_file_name)
 		if err != nil {
-			fmt.Println("\nError reading file : ", intermediate_file_name)
+			fmt.Println("\nSAN: error reading file : ", intermediate_file_name)
 			fmt.Println("\nERROR: ", err)
 		}
 
 		dec := json.NewDecoder(bytes.NewReader(file))
 
-		// Read the intermediate file and append to the decoder
 		for dec.More() {
 			var m KeyValue
 			dec.Decode(&m)
 			fmt.Printf("\nKEY: %s VALUE: %s", m.Key, m.Value)
-			keyValue_Array = append(keyValue_Array, m)
+			//x["key"] = append(x["key"], "value")
+			keyValMap[m.Key] = append(keyValMap[m.Key], m.Value)
+			//keyValue_Array = append(keyValue_Array, m)
 		}
 
 		//sort
-		sort.Slice(keyValue_Array[:], func(i, j int) bool {
+		/*sort.Slice(keyValue_Array[:], func(i, j int) bool {
 			key1, _ := strconv.Atoi(keyValue_Array[i].Key)
 			key2, _ := strconv.Atoi(keyValue_Array[j].Key)
 			return key1 < key2
-		})
-
-		//iterate
-		var result_file, _ = os.OpenFile(outFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-		enc := json.NewEncoder(result_file)
-
-		for _, kv := range keyValue_Array {
-			var val []string
-			val = append(val, kv.Value)
-			reduceF_Result := reduceF(kv.Key, val)
-			val = val[:0]
-			enc.Encode(KeyValue{kv.Key, reduceF_Result})
-		}
-
-		result_file.Close()
+		})*/
 	}
+	//iterate
+	var result_file, _ = os.OpenFile(outFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	enc := json.NewEncoder(result_file)
+
+	/*for _, kv := range keyValue_Array {
+		var val []string
+		val = append(val, kv.Value)
+		//fmt.Printf("\nSAN: Value of val: %v", val)
+		reduceF_Result := reduceF(kv.Key, val) //TODO: reduce expects array of strings
+		val = val[:0]
+		enc.Encode(KeyValue{kv.Key, reduceF_Result})
+	}*/
+	for k, v := range keyValMap {
+		reduceF_Result := reduceF(k, v)
+		enc.Encode(KeyValue{k, reduceF_Result})
+	}
+
+	result_file.Close()
+
 }

@@ -18,26 +18,59 @@ import (
 //
 func mapF(filename string, contents string) []mapreduce.KeyValue {
 	// Your code here (Part II).
-	fmt.Println("mapF : FileName ", filename)
+	//go through the contents : generate word : freq pairs
+
+	//1.FINAL return value
+	//var keyValue_Array []KeyValue
+	//keyValue_Array = append(keyValue_Array, m)
+
+	//2. create map <word,frequency>  freq := make(map[string]int)
+	//EXAMPLE   word_freq := make(map[string]int)
+	// range string slice gives index, word pairs
+	// index is not needed, so use blank identifier _
+	//for _, word := range words {
+	// check if word (the key) is already in the map
+	//	_, ok := word_freq[word]
+	// if true add 1 to frequency (value of map)
+	// else start frequency at 1
+	//	if ok == true {
+	//		word_freq[word] += 1
+	//	} else {
+	//		word_freq[word] = 1
+	//	}
+	//}
+
+	//3. Get words from string
 
 	f := func(c rune) bool {
 		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
 	}
-	//fmt.Printf("Fields are: %q", strings.FieldsFunc(contents, f))
-
+	//  fmt.Printf("Fields are: %q", strings.FieldsFunc("  foo1;bar2,baz3...", f))
 	words := strings.FieldsFunc(contents, f)
-
-	var keyVal []mapreduce.KeyValue
+	word_freq := make(map[string]int)
 
 	for _, word := range words {
-		kv := mapreduce.KeyValue{
-			Key:   word,
-			Value: "1",
+		//low_word := strings.ToLower(word)
+		// check if word (the key) is already in the map
+		_, ok := word_freq[word]
+		// if true add 1 to frequency (value of map)
+		// else start frequency at 1
+		if ok == true {
+			word_freq[word] += 1
+		} else {
+			word_freq[word] = 1
 		}
-		keyVal = append(keyVal, kv)
 	}
-	//fmt.Println(keyVal)
-	return keyVal
+
+	var keyValue_Array []mapreduce.KeyValue
+
+	for k, v := range word_freq {
+		//Add to KeyValue array
+		//fmt.Printf("\nSAN: Key: %s Value: %d", k, v)
+		keyValue_Array = append(keyValue_Array, mapreduce.KeyValue{k, strconv.Itoa(v)})
+	}
+
+	return keyValue_Array
 }
 
 //
@@ -47,8 +80,16 @@ func mapF(filename string, contents string) []mapreduce.KeyValue {
 //
 func reduceF(key string, values []string) string {
 	// Your code here (Part II).
-	return strconv.Itoa(len(values))
-	//return ""
+	fmt.Printf("SANREDUCE: %s - ", key)
+	fmt.Println("SANREDUCE: ", values)
+	// for key : add all the values in values array and return as a string
+	sum := 0
+	for _, val := range values {
+		i, _ := strconv.Atoi(val)
+		sum = sum + i
+	}
+	//fmt.Printf("\nSAND: Sum is of key %s is %d", key, sum)
+	return strconv.Itoa(sum)
 }
 
 // Can be run in 3 ways:
